@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
             name='Image',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('file_path', models.ImageField(upload_to='images')),
+                ('file', models.ImageField(upload_to='images')),
                 ('description', models.JSONField(null=True)),
                 ('analyzed_at', models.DateTimeField(null=True)),
             ],
