@@ -1,0 +1,27 @@
+[
+    {
+        "model": "images.comment",
+        "pk": 1,
+        "fields": {
+            "content": "This is some content for comment 1",
+            "image_id": 1
+        }
+    },
+    {
+        "model": "images.comment",
+        "pk": 2,
+        "fields": {
+            "content": "This is some content for comment 2 for image 1",
+            "image_id": 1
+        }
+    },
+    {
+        "model": "images.comment",
+        "pk": 3,
+        "fields": {
+            "content": "This is some content for comment 2 for image 1",
+            "image_id": 1
+        }
+    }
+]
+    

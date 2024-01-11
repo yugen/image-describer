@@ -1,0 +1,30 @@
+[
+    {
+        "model": "images.image",
+        "pk": 1,
+        "fields": {
+            "file_path": "some_test_file.jpg",
+            "description": "this is a description for image 1",
+            "analyzed_at": "2024-01-10 17:34:00Z"
+        }
+    },
+    {
+        "model": "images.image",
+        "pk": 2,
+        "fields": {
+            "file_path": "some_test_file_2.jpg",
+            "description": "this is a description for image 2",
+            "analyzed_at": "2024-01-10 17:35:00Z"
+        }
+    },
+    {
+        "model": "images.image",
+        "pk": 3,
+        "fields": {
+            "file_path": "some_test_file_3.jpg",
+            "description": "this is a description for image 3",
+            "analyzed_at": "2024-01-10 17:36:00Z"
+        }
+    }
+]
+    
