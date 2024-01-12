@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+import os
 
 
 class ImagesConfig(AppConfig):
@@ -6,3 +7,4 @@ class ImagesConfig(AppConfig):
     name = 'images'
     image_page_size = 10
     comment_page_size = 10
+    openai_api_key=os.getenv('OPENAI_API_KEY')
