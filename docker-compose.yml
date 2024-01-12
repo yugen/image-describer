@@ -20,5 +20,7 @@ services:
       - POSTGRES_NAME=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      - GOOGLE_APPLICATION_CREDENTIALS=/code/secrets/googlecloud_api_key.json
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       - db
