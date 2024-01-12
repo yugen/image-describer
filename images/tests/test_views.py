@@ -1,5 +1,4 @@
 import base64
-import datetime
 from unittest.mock import patch
 
 from django.apps import apps
@@ -7,8 +6,7 @@ from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
-from .models import Image
-# from images import actions
+from ..models import Image
 
 # View Tests
 class ImageIndexEndpointTest(TestCase):
@@ -170,18 +168,3 @@ class AddCommentEndpointTest(TestCase):
         rsp = self.client.post('/images/1/comments')
         self.assertEqual(rsp.status_code, 422)
         self.assertIn('content', rsp.json()['errors'])
-
-# Action Tests
-
-# Model Tests
-class ImageModelTests(TestCase):
-
-    def test_analyzed_is_True_if_analyzed_at_not_None(self):
-        image = Image(analyzed_at=datetime.datetime.now())
-
-        self.assertIs(image.analyzed, True)
-
-    def test_analyzed_is_False_if_analyzed_at_isNone(self):
-        image = Image()
-
-        self.assertIs(image.analyzed, False)
