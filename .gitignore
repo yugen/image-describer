@@ -1,5 +1,5 @@
-data
-__pycache__
-media
+data/
+__pycache__/
+media/
 .env
 .python-version
