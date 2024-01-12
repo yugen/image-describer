@@ -74,8 +74,44 @@ class ImageShowEndpointTest(TestCase):
             }
         )
 
+class ImageShowWithCommentsEndpointTest(TestCase):
+    fixtures = ['images', 'comments']
+    
+    def test_if_image_not_found_it_responds_w_404(self):
+        """
+        If the image is not found it should respond with a 404
+        """
+        self.assertEqual(self.client.get("/image/4").status_code, 404)
+        
+    def test_if_image_found_and_has_no_comments_it_returns_empty_comments_array(self):
+        rsp = self.client.get('/image/2')
+        self.assertEqual(rsp.json()['id'], 2)
+        self.assertEqual(rsp.json()['comments']['data'], [])
+        
+    def test_if_image_found_and_has_comments_and_no_comment_page_given_responds_with_first_page(self):
+        apps.get_app_config('images').comment_page_size = 2
+        rsp = self.client.get('/image/1')
+        self.assertEqual(rsp.json()['id'], 1)
+        self.assertEqual(rsp.json()['comments']['current_page'], 1)
+        self.assertEqual(len(rsp.json()['comments']['data']), 2)
+        self.assertEqual(rsp.json()['comments']['num_pages'], 2)
+
+    def test_if_image_found_and_has_comments_and_comment_page_given_responds_with_given_page(self):
+        apps.get_app_config('images').comment_page_size = 2
+        rsp = self.client.get('/image/1?comment_page=2')
+        self.assertEqual(rsp.json()['id'], 1)
+        self.assertEqual(rsp.json()['comments']['current_page'], 2)
+        self.assertEqual(len(rsp.json()['comments']['data']), 1)
+        self.assertEqual(rsp.json()['comments']['num_pages'], 2)
+    
+    def test_if_imag_found_and_given_comment_page_is_out_of_range_responds_with_416(self):
+        apps.get_app_config('images').comment_page_size = 2
+        rsp = self.client.get('/image/1?comment_page=99')
+        self.assertEqual(rsp.status_code, 416)
+
+
 class ImageCommentsEndpointTest(TestCase):
-    fixtures = ['images.json', 'comments']
+    fixtures = ['images', 'comments']
 
     def setUp(self):
         apps.get_app_config('images').comment_page_size = 2

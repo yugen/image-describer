@@ -9,4 +9,4 @@ class ImageSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = ['id', 'content', 'image_id']
+        fields = ['id', 'content', 'image_id', 'created_at']

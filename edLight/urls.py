@@ -19,9 +19,12 @@ from django.urls import include, path
 from django.views.generic.base import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
+from images import views as images_views
 
 urlpatterns = [
     path('', RedirectView.as_view(url='images/')),
-    path('images/', include("images.urls")),
     path('admin/', admin.site.urls),
+    path('analyze_image', images_views.ingest_image),
+    path('image/<int:image_id>', images_views.show_with_comments),
+    path('images/', include("images.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

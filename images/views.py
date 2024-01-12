@@ -1,15 +1,19 @@
 from django.apps import apps
-from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator, EmptyPage
-from django.http import HttpResponse, JsonResponse, Http404
-from django.shortcuts import render
+from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from images.forms import ImageForm, CommentForm
-from images.models import Image
-from images.serializers import ImageSerializer, CommentSerializer
-from images import actions
+from .forms import ImageForm, CommentForm
+from .models import Image
+from .serializers import ImageSerializer, CommentSerializer
+from . import actions
+
+def get_image(image_id: int) -> Image:
+    try:
+        return Image.objects.get(pk=image_id)
+    except Image.DoesNotExist:
+        raise Http404("Image does not exist")
+
 
 @require_GET
 def index(request):
@@ -32,7 +36,6 @@ def index(request):
     except EmptyPage:
         return JsonResponse({"error": 'The page is empty', 'num_pages': paginator.num_pages}, status=416)
 
-
 @require_POST
 def ingest_image(request):
     form = ImageForm(request.POST, request.FILES)
@@ -44,34 +47,35 @@ def ingest_image(request):
 
 @require_GET
 def show(request, image_id):
-    try:
-        image = Image.objects.get(pk=image_id)
-    except Image.DoesNotExist:
-        raise Http404("Image does not exist")
+    image = get_image(image_id)
+    
     return JsonResponse(ImageSerializer(image).data)
 
+@require_GET
+def show_with_comments(request, image_id):
+    image = get_image(image_id)
+    try:
+        comment_page = actions.get_paginated_comments(image, current_page=int(request.GET.get('comment_page', 1)))
+    except EmptyPage as e:
+        return JsonResponse({"error": 'The page of comments you requested is empty', 'num_pages': e.num_pages}, status=416)
+    
+    data = ImageSerializer(image).data
+    data['comments'] = comment_page
+   
+    return JsonResponse(data)
+    
 @require_http_methods(['GET', 'POST'])
 def comments(request, image_id):
-    try:
-        image = Image.objects.get(pk=image_id)
-    except Image.DoesNotExist:
-        raise Http404("Image does not exist")
+    image = get_image(image_id)
 
     if request.method == "GET":
         current_page = int(request.GET.get('page', 1))
 
         try:
-            comments = image.comment_set.all().order_by('created_at')
-            paginator = Paginator(comments, apps.get_app_config('images').comment_page_size)
-            comment_page = CommentSerializer(paginator.page(current_page), many=True)
-            return JsonResponse({
-                    'data': comment_page.data,
-                    'num_pages': paginator.num_pages,
-                    'current_page': current_page
-                }
-            )
-        except EmptyPage:
-            return JsonResponse({"error": 'The page is empty', 'num_pages': paginator.num_pages}, status=416)
+            data = actions.get_paginated_comments(image, current_page)
+            return JsonResponse(data)
+        except EmptyPage as e:
+            return JsonResponse({"error": 'The page is empty', 'num_pages': e.num_pages}, status=416)
         
     if request.method == "POST":
         form = CommentForm(request.POST)
