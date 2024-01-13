@@ -1,14 +1,62 @@
 import base64
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from django.apps import apps
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from rest_framework import status
 
 from ..models import Image
+from ..describers import ImageDescriberError
 
 # View Tests
+class AnalyzeImageEndpointTest(TestCase):
+    def test_if_the_request_method_is_get_it_responds_with_405(self):
+        rsp = self.client.get('/analyze-image')
+        self.assertEqual(rsp.status_code, 405)
+        
+    def test_it_validates_a_file_is_uploaded(self):
+        rsp = self.client.post('/analyze-image', data={})
+        self.assertEqual(rsp.status_code, 422)
+        self.assertEqual(rsp.json(), {'errors': {'file': ['No file was submitted.']}})
+
+    def test_it_validates_the_uploaded_file_is_an_image(self):
+        non_image_file = SimpleUploadedFile("non_image.xlsx", b"file_content", content_type="application/vnd.ms-excel")
+        rsp = self.client.post('/analyze-image', data={'file': non_image_file})
+        self.assertContains(rsp, 'Upload a valid image.', status_code=422)
+
+    @patch('images.actions.analyze_image')
+    def test_it_creates_an_image_and_calls_analyze_image(self, action_mock):
+        """
+        If the user uploads a valid image, the view runs the store_and_analyze_image action
+        """
+
+        action_mock.return_value = Image(id=1)
+
+        rsp = self._post_image()
+        
+        self.assertEqual(rsp.status_code, 200)
+        action_mock.assert_called()
+        self.assertIn('id', rsp.json())
+
+    @patch('images.actions.analyze_image',  side_effect=ImageDescriberError('this is a bad scene!'))   
+    def test_it_returns_the_image_and_an_error_message_if_analysis_failed(self, action_mock):
+        rsp = self._post_image()
+
+        self.assertEqual(rsp.status_code, status.HTTP_207_MULTI_STATUS)
+        self.assertIn('id', rsp.json())
+        self.assertEqual(rsp.json()['errors']['describer'], ['this is a bad scene!'])
+
+    def _post_image(self):
+        """
+        Post a dummy image to /analyze-image endpoint
+        """
+        image_data = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAUA" + "AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO" + "9TXL0Y4OHwAAAABJRU5ErkJggg==")
+        image_file = SimpleUploadedFile("image_file.png", image_data, content_type="image/png")
+        
+        return self.client.post('/analyze-image', data={'file': image_file})
+
 class ImageIndexEndpointTest(TestCase):
     fixtures = ['images.json']
 
@@ -83,38 +131,6 @@ class ImageShowWithCommentsEndpointTest(TestCase):
         rsp = self.client.get('/image/1?comment_page=99')
         self.assertEqual(rsp.status_code, 416)
 
-class ImageAnalyzeEndpointTest(TestCase):
-    def test_if_the_request_method_is_get_it_responds_with_405(self):
-        rsp = self.client.get('/analyze-image')
-        self.assertEqual(rsp.status_code, 405)
-        
-    def test_it_validates_a_file_is_uploaded(self):
-        rsp = self.client.post('/analyze-image', data={})
-        self.assertEqual(rsp.status_code, 422)
-        self.assertEqual(rsp.json(), {'errors': {'file': ['No file was submitted.']}})
-
-    def test_it_validates_the_uploaded_file_is_an_image(self):
-        non_image_file = SimpleUploadedFile("non_image.xlsx", b"file_content", content_type="application/vnd.ms-excel")
-        rsp = self.client.post('/analyze-image', data={'file': non_image_file})
-        self.assertContains(rsp, 'Upload a valid image.', status_code=422)
-
-    @patch('images.actions.analyze_image')
-    def test_if_an_image_file_is_uploaded_it_calls_create_and_analyze_image(self, action_mock):
-        """
-        If the user uploads a valid image, the view runs the store_and_analyze_image action
-        """
-
-        action_mock.return_value = Image(id=1)
-
-        image_data = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAUA" + "AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO" + "9TXL0Y4OHwAAAABJRU5ErkJggg==")
-        image_file = SimpleUploadedFile("image_file.png", image_data, content_type="image/png")
-
-        rsp = self.client.post('/analyze-image', data={'file': image_file})
-        
-        self.assertEqual(rsp.status_code, 200)
-        action_mock.assert_called()
-        self.assertEqual(rsp.json()['id'], 1)
-        
 class AddCommentEndpointTest(TestCase):
     fixtures = ['images']
 

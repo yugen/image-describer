@@ -30,6 +30,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/Image'
           description: ''
+        '207':
+          content:
+            application/json:
+              schema:
+                description: Image stored, but analysis failed
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  file:
+                    type: integer
+                  analyzed:
+                    type: boolean
+                  description:
+                    type: string
+                  errors:
+                    type: object
+                    properties:
+                      describer:
+                        type: array
+                        items:
+                          type: string
+          description: ''
         '422':
           description: Bad request response includes errors
   /image/{image_id}:

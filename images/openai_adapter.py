@@ -6,6 +6,14 @@ import base64
 import requests
 from typing import Union
 from django.apps import apps
+import logging
+
+class OpenAIError(requests.RequestException):
+    def __repr__():
+        repr(self.original)
+
+    def __str__():
+        str(self.original)
 
 class OpenAiAdapter:
     def __init__(self):
@@ -14,13 +22,9 @@ class OpenAiAdapter:
             raise ValueError('OPENAI_API_KEY not set')
         
     def prompt_image_description(self, image_file: str) -> Union[str, None]:
-        try:
-            response = self.make_request(self.make_image_prompt(image_file))
-            
-            return response.json()['choices'][0]['message']['content']
-        except requests.exceptions.RequestException as e:
-            # log
-            raise e
+        response = self.make_request(self.make_image_prompt(image_file))
+        
+        return response.json()['choices'][0]['message']['content']
        
     def make_request(self, payload):
         headers =  {
@@ -28,9 +32,13 @@ class OpenAiAdapter:
             "Authorization": f"Bearer {self.api_key}"
         }
         
-        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-        response.raise_for_status()
-        return response
+        try:
+            response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+            response.raise_for_status()
+            return response
+        except requests.exceptions.HTTPError as e:
+            logging.warn(f"Error Accessing OpenAI: str(e)")
+            raise OpenAIError(response=e.response, request=e.request, original=e)
     
     def make_image_prompt(self, image_file: str) -> dict:
         base64_image = self._encode_image(image_file)

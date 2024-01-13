@@ -10,6 +10,7 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 
@@ -18,6 +19,7 @@ from .models import Image
 from . import serializers
 from . import actions
 import logging
+from .describers import ImageDescriberError
 
 @extend_schema(
      description='Returns a page (10) image records at a time.',
@@ -50,7 +52,23 @@ def index(request):
     description='Ingest a new image.  Stores an image model and analyze the image',
     responses={
         200: serializers.ImageSerializer,
-        422: OpenApiResponse(description='Bad request response includes errors')
+        (207, "application/json"): {
+            "description": "Image stored, but analysis failed",
+            "type": "object",
+            "properties": {
+                "id": { "type": "integer" },
+                "file": { "type": "integer" },
+                "analyzed": { "type": "boolean" },
+                "description": { "type": "string" },
+                "errors": {
+                    "type": "object",
+                    "properties": {
+                        "describer": { "type": "array", "items": { "type": "string"}}
+                    }
+                },
+            }
+        },
+        422: OpenApiResponse(description='Bad request response includes errors'),
     },
     request={
         'multipart/form-data': {
@@ -76,8 +94,17 @@ def ingest_image(request):
     imageModel.save()
     logging.debug(f"stored image at {imageModel.file.path} for Image {imageModel.id}")
 
-    imageModel = actions.analyze_image(imageModel)
-    return Response(serializers.ImageSerializer(imageModel).data)
+    status_code = status.HTTP_200_OK
+    response_data = serializers.ImageSerializer(imageModel).data
+    try:
+        logging.debug('try to analyze_image')
+        imageModel = actions.analyze_image(imageModel)
+    except Exception as e:
+        logging.debug(str(e))
+        status_code = status.HTTP_207_MULTI_STATUS
+        response_data['errors'] = {'describer': [str(e)]}
+        
+    return Response(response_data, status_code)
 
 @extend_schema(
      description='Returns an image record without comments.',
