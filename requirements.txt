@@ -4,3 +4,4 @@ pillow>=10.1
 djangorestframework>=3.1
 google-cloud-vision>=3.5
 openai>1.7
+drf-spectacular>=0.27

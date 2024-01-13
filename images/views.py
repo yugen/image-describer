@@ -1,24 +1,27 @@
 from django.apps import apps
+from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator, EmptyPage
 from django.http import JsonResponse, Http404
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.parsers import FormParser, MultiPartParser
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
+from drf_spectacular.types import OpenApiTypes
 
 from .forms import ImageForm, CommentForm
 from .models import Image
-from .serializers import ImageSerializer, CommentSerializer
+from . import serializers
 from . import actions
 import logging
 
-def get_image(image_id: int) -> Image:
-    try:
-        return Image.objects.get(pk=image_id)
-    except Image.DoesNotExist:
-        raise Http404("Image does not exist")
-
-
+@extend_schema(
+     description='Returns a page (10) image records at a time.',
+     responses=serializers.ImageSerializer(many=True),
+     parameters=[
+        OpenApiParameter("page", OpenApiTypes.NUMBER, OpenApiParameter.QUERY),
+     ]
+)
 @api_view(['GET'])
 def index(request):
     """
@@ -29,7 +32,7 @@ def index(request):
     paginator = Paginator(images, apps.get_app_config('images').image_page_size)
 
     try:
-        image_page = ImageSerializer(paginator.page(current_page), many=True)
+        image_page = serializers.ImageSerializer(paginator.page(current_page), many=True)
         return JsonResponse({
                 'data': image_page.data,
                 'num_pages': paginator.num_pages,
@@ -39,10 +42,33 @@ def index(request):
     except EmptyPage:
         return JsonResponse({"error": 'The page is empty', 'num_pages': paginator.num_pages}, status=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
 
+@extend_schema(
+    description='Ingest a new image.  Stores an image model and analyze the image',
+    responses={
+        200: serializers.ImageSerializer,
+        422: OpenApiResponse(description='Bad request response includes errors')
+    },
+    parameters=[
+       serializers.ImageUploadSerializer
+    ],
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'file': {
+                'type': 'string',
+                'format': 'binary'
+                }
+            }
+        }
+    },
+)
 @api_view(['POST'])
-@parser_classes([FormParser, MultiPartParser])
 def ingest_image(request):
-    serializer = ImageSerializer(data=request.data)
+    """
+    Ingest a new image.  Store an image model and analyze the image
+    """
+    serializer = serializers.ImageUploadSerializer(data=request.data)
     if not serializer.is_valid():
         return JsonResponse({'errors': serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     imageModel = Image(file=request.data['file'])
@@ -50,34 +76,89 @@ def ingest_image(request):
     logging.debug(f"stored image at {imageModel.file.path} for Image {imageModel.id}")
 
     imageModel = actions.analyze_image(imageModel)
-    return Response(ImageSerializer(imageModel).data)
+    return Response(serializers.ImageSerializer(imageModel).data)
 
+@extend_schema(
+     description='Returns an image record without comments.',
+     responses=serializers.ImageSerializer,
+)
 @api_view(['GET'])
 def show(request, image_id):
-    image = get_image(image_id)
+    """
+    Get an image record
+    """
+    image = get_object_or_404(Image, pk=image_id)
     
-    return JsonResponse(ImageSerializer(image).data)
+    return JsonResponse(serializers.ImageSerializer(image).data)
 
+@extend_schema(
+    responses = {
+        (200, "application/json"): {
+            "description": "Success",
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "minLength": 1
+                },
+                "file": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "description": { "type": "string" },
+                "analyzed": { "type": "boolean" },
+                "comments": {
+                    "type": "object",
+                    "properties": {
+                        "num_pages": { "type": "integer" },
+                        "current_page": { "type": "integer" },
+                        "data": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": { "type": "integer"},
+                                    "content": { "type": "string"},
+                                    "created_at": { "type": "string"},
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "id",
+                "file",
+                "analyzed"
+            ]
+        },
+    },
+    parameters = [
+        OpenApiParameter('comment_page', OpenApiTypes.NUMBER, OpenApiParameter.QUERY)
+    ]
+)
 @api_view(['GET'])
 def show_with_comments(request, image_id):
-    image = get_image(image_id)
+    """
+    Get an image record with a page of comments
+    """
+    image = get_object_or_404(Image, pk=image_id)
     try:
         comment_page = actions.get_paginated_comments(image, current_page=int(request.GET.get('comment_page', 1)))
     except EmptyPage as e:
         return JsonResponse({"error": 'The page of comments you requested is empty', 'num_pages': e.num_pages}, status=416)
     
-    data = ImageSerializer(image).data
+    data = serializers.ImageSerializer(image).data
     data['comments'] = comment_page
    
     return JsonResponse(data)
     
 @api_view(['GET', 'POST'])
 def comments(request, image_id):
-    
     """
     Retrieve a page of comments for an image OR create a comment for an image
     """
-    image = get_image(image_id)
+    image = get_object_or_404(Image, pk=image_id)
 
     if request.method == "GET":
         current_page = int(request.GET.get('page', 1))
@@ -89,13 +170,14 @@ def comments(request, image_id):
             return JsonResponse({"error": 'The page is empty', 'num_pages': e.num_pages}, status=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
         
     if request.method == "POST":
-        form = CommentForm(request.data)
-        if not form.is_valid():
-            return JsonResponse({'errors': form.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        # form = CommentForm(request.data)
+        input_serializer = serializers.CommentCreateSerializer(data=request.data)
+        if not input_serializer.is_valid():
+            return JsonResponse({'errors': input_serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
         
-        comment = image.comment_set.create(content=form.clean()['content'])
+        comment = image.comment_set.create(content=input_serializer.data['content'])
         try:
-            serializer = CommentSerializer(comment)
+            serializer = serializers.CommentSerializer(comment)
             return Response(serializer.data)
         except Exception as e:
             return Response(str(e), 400)

@@ -1,0 +1,194 @@
+openapi: 3.0.3
+info:
+  title: TJ's EdLight Application Project
+  version: 1.0.0
+  description: An app to upload, view and comment on analyzed images.
+paths:
+  /analyze-image:
+    post:
+      operationId: analyze_image_create
+      description: Ingest a new image.  Stores an image model and analyze the image
+      parameters:
+      - in: query
+        name: file
+        schema:
+          type: string
+          format: uri
+        required: true
+      tags:
+      - analyze-image
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: ''
+        '422':
+          description: Bad request response includes errors
+  /image/{image_id}:
+    get:
+      operationId: image_retrieve
+      description: Get an image record with a page of comments
+      parameters:
+      - in: query
+        name: comment_page
+        schema:
+          type: number
+      - in: path
+        name: image_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - image
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Success
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    minLength: 1
+                  file:
+                    type: string
+                    minLength: 1
+                  description:
+                    type: string
+                  analyzed:
+                    type: boolean
+                  comments:
+                    type: object
+                    properties:
+                      num_pages:
+                        type: integer
+                      current_page:
+                        type: integer
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            content:
+                              type: string
+                            created_at:
+                              type: string
+                              description: datetime
+                required:
+                - id
+                - file
+                - analyzed
+          description: ''
+  /image/{image_id}/comments:
+    get:
+      operationId: image_comments_retrieve
+      description: Retrieve a page of comments for an image OR create a comment for
+        an image
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - image
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: image_comments_create
+      description: Retrieve a page of comments for an image OR create a comment for
+        an image
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - image
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /images:
+    get:
+      operationId: images_list
+      description: Returns a page (10) image records at a time.
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: number
+      tags:
+      - images
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Image'
+          description: ''
+components:
+  schemas:
+    Image:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        file:
+          type: string
+          format: uri
+        description:
+          nullable: true
+        analyzed:
+          type: boolean
+          readOnly: true
+      required:
+      - analyzed
+      - file
+      - id
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

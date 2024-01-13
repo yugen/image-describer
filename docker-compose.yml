@@ -24,3 +24,11 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       - db
+  api_docks:
+    image: swaggerapi/swagger-ui
+    volumes:
+      - ${PWD}/schema.yml:/schema.yml
+    environment:
+      - SWAGGER_JSON=/schema.yml
+    ports:
+      - 80:8080
