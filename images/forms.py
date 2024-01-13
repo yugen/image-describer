@@ -4,7 +4,7 @@ from images.models import Image, Comment
 class ImageForm(ModelForm):
     class Meta:
         model = Image
-        fields = '__all__'
+        fields = ['file']
 
 class CommentForm(ModelForm):
     class Meta:
