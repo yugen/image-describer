@@ -107,17 +107,28 @@ To get the application up and running (command-line snippets are for Mac and Lin
 3. Ensure that Docker Desktop is running.
 4. Download and build the docker images
    ```
-   $ docker compose build
+   $ docker compose up --build
    ```
    Note that this could take a little while.  This is a good time to stretch, grab a cup of coffee, and look out the window.
-5. Setup the database
+5. Wait for the database to be ready.  You'll see a line like this one:
+    ```
+    edlight-db-1         | 2024-01-13 14:51:44.273 UTC [1] LOG:  database system is ready to accept connections
+    ```
+6. Bring the containers down with `ctrl+c`
+6. Build the containers up again:
+   ```
+   $ docker compose up
+   ```
+   (Unfortunately this is necessary b/c the django app starts up before the database exists and fails to start.)
+6. In another terminal, set up the database
     ```
     docker compose exec backend python manage.py migrate
     ```
-4. Start the containers 
+7. [Optional] If you'd like a few dummy records load the fixtures:
     ```
-    $ docker compose up
+    docker compose exec backend python manage.py loaddata images comments
     ```
+6.  You can now access the API at http://localhost:8000 and the API documentation at http://localhost:8080
 
 ## Running tests
 Once the application has been built and spun up, tests can be run from the command line:
