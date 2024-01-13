@@ -153,31 +153,29 @@ def show_with_comments(request, image_id):
    
     return JsonResponse(data)
     
-@api_view(['GET', 'POST'])
+@extend_schema(
+    description='Ingest a new image.  Stores an image model and analyze the image',
+    responses={
+        200: serializers.CommentSerializer,
+        422: OpenApiResponse(description='Bad request response includes errors')
+    },
+    request=serializers.CommentCreate,
+)
+@api_view(['POST'])
 def comments(request, image_id):
     """
     Retrieve a page of comments for an image OR create a comment for an image
     """
     image = get_object_or_404(Image, pk=image_id)
 
-    if request.method == "GET":
-        current_page = int(request.GET.get('page', 1))
-
-        try:
-            data = actions.get_paginated_comments(image, current_page)
-            return JsonResponse(data)
-        except EmptyPage as e:
-            return JsonResponse({"error": 'The page is empty', 'num_pages': e.num_pages}, status=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
-        
-    if request.method == "POST":
-        # form = CommentForm(request.data)
-        input_serializer = serializers.CommentCreateSerializer(data=request.data)
-        if not input_serializer.is_valid():
-            return JsonResponse({'errors': input_serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-        
-        comment = image.comment_set.create(content=input_serializer.data['content'])
-        try:
-            serializer = serializers.CommentSerializer(comment)
-            return Response(serializer.data)
-        except Exception as e:
-            return Response(str(e), 400)
+    # form = CommentForm(request.data)
+    input_serializer = serializers.CommentCreateSerializer(data=request.data)
+    if not input_serializer.is_valid():
+        return JsonResponse({'errors': input_serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+    
+    comment = image.comment_set.create(content=input_serializer.data['content'])
+    try:
+        serializer = serializers.CommentSerializer(comment)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response(str(e), 400)

@@ -95,36 +95,15 @@ paths:
                               type: string
                             created_at:
                               type: string
-                              description: datetime
                 required:
                 - id
                 - file
                 - analyzed
           description: ''
   /image/{image_id}/comments:
-    get:
-      operationId: image_comments_retrieve
-      description: Retrieve a page of comments for an image OR create a comment for
-        an image
-      parameters:
-      - in: path
-        name: image_id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - image
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          description: No response body
     post:
       operationId: image_comments_create
-      description: Retrieve a page of comments for an image OR create a comment for
-        an image
+      description: Ingest a new image.  Stores an image model and analyze the image
       parameters:
       - in: path
         name: image_id
@@ -133,13 +112,31 @@ paths:
         required: true
       tags:
       - image
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommentCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommentCreate'
+        required: true
       security:
       - cookieAuth: []
       - basicAuth: []
       - {}
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+        '422':
+          description: Bad request response includes errors
   /images:
     get:
       operationId: images_list
@@ -166,6 +163,34 @@ paths:
           description: ''
 components:
   schemas:
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        content:
+          type: string
+        image_id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - content
+      - created_at
+      - id
+      - image_id
+    CommentCreate:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+      - content
     Image:
       type: object
       properties:
