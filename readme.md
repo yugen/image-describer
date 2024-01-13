@@ -146,4 +146,5 @@ Given the time-limited nature of this assignment, there are many things that cou
     * registration
     * login
     * endpoint protection
+4. Smooth out install process
 
