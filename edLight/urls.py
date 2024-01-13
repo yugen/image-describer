@@ -8,7 +8,7 @@ from images import views as images_views
 urlpatterns = [
     path('', RedirectView.as_view(url='images/')),
     path('admin/', admin.site.urls),
-    path('analyze_image', images_views.ingest_image),
+    path('analyze-image', images_views.ingest_image),
     path('images/', include("images.urls")),
     path('image/<int:image_id>', images_views.show_with_comments),
     path('image/<int:image_id>/comments', images_views.comments),

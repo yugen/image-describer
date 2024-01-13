@@ -6,6 +6,7 @@ from .serializers import CommentSerializer
 from django.core.paginator import Paginator, EmptyPage
 from django.apps import apps
 from django.http import Http404
+import logging
 
 def store_and_analyze_image(form: ImageForm) -> Image:
     imageModel = form.save()
@@ -18,14 +19,17 @@ def analyze_image(image: Image) -> Image:
     Uses a "describer" to get the a description.
     If None is returned analysis was unsuccessful and the image has not yet been analyzed.
     """ 
+    logging.debug('actions.analyze_image')
     describer = make_image_describer()
+    logging.debug(f'using describer: {describer}')
     try:
         description = describer.describe_image(image.file.path)
         image.description = description
         image.analyzed_at = datetime.now()
         image.save()
-    except:
-        # log exception
+        logging.debug('analyzed image')
+    except Exception as e:
+        logging.warn(e)
         pass
     
     return image
