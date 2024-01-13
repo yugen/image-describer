@@ -161,16 +161,16 @@ class ImageAnalyzeEndpointTest(TestCase):
         self.assertEqual(rsp.status_code, 405)
         
     def test_it_validates_a_file_is_uploaded(self):
-        rsp = self.client.post('/images/analyze', data={'file': ''})
+        rsp = self.client.post('/images/analyze', data={})
         self.assertEqual(rsp.status_code, 422)
-        self.assertEqual(rsp.json(), {'errors': {'file': ['This field is required.']}})
+        self.assertEqual(rsp.json(), {'errors': {'file': ['No file was submitted.']}})
 
     def test_it_validates_the_uploaded_file_is_an_image(self):
         non_image_file = SimpleUploadedFile("non_image.xlsx", b"file_content", content_type="application/vnd.ms-excel")
         rsp = self.client.post('/images/analyze', data={'file': non_image_file})
         self.assertContains(rsp, 'Upload a valid image.', status_code=422)
 
-    @patch('images.actions.store_and_analyze_image')
+    @patch('images.actions.analyze_image')
     def test_if_an_image_file_is_uploaded_it_calls_create_and_analyze_image(self, action_mock):
         """
         If the user uploads a valid image, the view runs the store_and_analyze_image action
@@ -182,9 +182,10 @@ class ImageAnalyzeEndpointTest(TestCase):
         image_file = SimpleUploadedFile("image_file.png", image_data, content_type="image/png")
 
         rsp = self.client.post('/images/analyze', data={'file': image_file})
+        
         self.assertEqual(rsp.status_code, 200)
         action_mock.assert_called()
-        self.assertEqual(rsp.json()['image']['id'], 1)
+        self.assertEqual(rsp.json()['id'], 1)
         
 class AddCommentEndpointTest(TestCase):
     fixtures = ['images']
