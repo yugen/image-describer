@@ -15,56 +15,74 @@ See [Installation](#installation) for instructions on and requirements to set th
 See [TODOs](#TODOs) for opportunities to improve this API.
 
 ## Usage
-You can use the following endpoints to upload/analyze, browse, and comment on images:
+You can use the following endpoints to upload/analyze, browse, and comment on images.
+
 ### Endpoints
+For interactive, auto-generated API documentation, install and launch the application and visit http://localhost:8080
 
 #### `POST: /analyze-image`
 Accepts an image file, stores it, and gets a description from the image analysis service.
-#### Params
-    * `file`: (file upload) - the image file you want to store and analyze.
-#### Response
-##### Success
-This endpoint returns a JSON object representing the image including:
-* `id: int` - The numeric identifier of the image
-* `file: str ` - The relative path of the image to the MEDIA_ROOT
-* `description: [null|str]` - The description, if any has been added by the image analysis.
-* `analyzed: bool` - Whether the image has been analyzed.
-
-##### Errors
+##### Params
+* `file`: (file upload) - the image file you want to store and analyze.
+##### Responses
+* `200` - This endpoint returns a JSON object representing the image including:
+    * `id: int` - The numeric identifier of the image
+    * `file: str ` - The relative path of the image to the MEDIA_ROOT
+    * `description: [null|str]` - The description, if any has been added by the image analysis.
+    * `analyzed: bool` - Whether the image has been analyzed.
 * `422` Status - validation errors.
     * `errors: object`
         * `<param>: array` - keys are parameters that failed validation; values are an array of error messages.
     
 ---
 
-#### `GET: /image/<image_id>`
-Given an image ID, show the image and a page of comments
-
-#### Params
-* `image_id: int` - A path parameter to identify the image record
-* `comment_page: int = 1` [OPTIONAL] - the page of comments you would like.  Defaults to the first page if not provided.
-
-#### Response
-##### Success
-This endpoint returns a JSON object representing the image including:
-* `id: int` - The numeric identifier of the image
-* `file: str ` - The relative path of the image to the MEDIA_ROOT
-* `description: [null|str]` - The description, if any has been added by the image analysis.
-* `analyzed: bool` - Whether the image has been analyzed.
-* `comments: object` - page comments w/ metadata:
-    * `num_pages: int` - Number of pages of comments available
-    * `data: array` - A list of comments sorted by creation date.  Each comment is an object containing:
-        * `id: int` - Numeric identifier of the comment
-        * `content: str` - The content of the comment
-        * `created_at: datetime`  - The date and time the comment was created
-
-##### Errors
-* `404` - Image record with id was not found
-* `416` - The comment page specified was out of range. For example if `num_pages` is `4` and `?comment_page=5`, the endpoint will fail with a `416` status code. 
-
+#### `GET: images`
+Returns a list of image records
+##### Params
+* `page: int = 1` [OPTIONAL] - the page of comments you would like.  Defaults to the first page if not provided.
+##### Responses
+* `200` - This endpoint returns a page (0-10) of images with their descriptions. Each record includes the following data:
+    * `id: int` - The numeric identifier of the image
+    * `file: str ` - The relative path of the image to the MEDIA_ROOT
+    * `description: [null|str]` - The description, if any has been added by the image analysis.
+    * `analyzed: bool` - Whether the image has been analyzed.
+There are no expected errors.
 ---
 
-### `GET: images`
+#### `GET: /image/<image_id>`
+Given an image ID, show the image and a page of comments
+##### Params
+* `image_id: int` - A path parameter to identify the image record
+* `comment_page: int = 1` [OPTIONAL] - the page of comments you would like.  Defaults to the first page if not provided.
+##### Responses
+* `200` - This endpoint returns a JSON object representing the image including:
+    * `id: int` - The numeric identifier of the image
+    * `file: str ` - The relative path of the image to the MEDIA_ROOT
+    * `description: [null|str]` - The description, if any has been added by the image analysis.
+    * `analyzed: bool` - Whether the image has been analyzed.
+    * `comments: object` - page comments w/ metadata:
+        * `num_pages: int` - Number of pages of comments available
+        * `data: array` - A list of comments sorted by creation date.  Each comment is an object containing:
+            * `id: int` - Numeric identifier of the comment
+            * `content: str` - The content of the comment
+            * `created_at: datetime`  - The date and time the comment was created
+* `404` - Image record with id was not found
+* `416` - The comment page specified was out of range. For example if `num_pages` is `4` and `?comment_page=5`, the endpoint will fail with a `416` status code. 
+---
+
+#### `POST: /image/<image_id>/comments`
+Create a comment for the image with `id=image_id`
+##### Params
+* `image_id: int` - Numeric ID of the image; this is a path parameter
+* `content: string` - Content of the comment
+##### Responses
+* `200` - Returns the new comment with the following data:
+    * `id: int` - Numeric ID of the comment
+    * `content: string` - Content of the comment
+    * `created_at: string` - Datetime the comment was created.
+* `404` - Image with id was not found.
+* `422` - Invalid submission.
+---
 
 ## Installation
 
@@ -101,11 +119,18 @@ To get the application up and running (command-line snippets are for Mac and Lin
     $ docker compose up
     ```
 
+## Running tests
+Once the application has been built and spun up, tests can be run from the command line:
+```
+$ docker compose exec backend python manage.py test
+```
+
 ## TODOs
 Given the time-limited nature of this assignment, there are many things that could/should be done to this application before it is considered complete:
 1. Image analysis should be handled using a task queue (i.e. `celery`).
 2. Prompts to OpenAI GPT-4v should be tailored to provide the best description for the business goals.  Collaboration with domain experts is required to determine those goals, and craft the most effective prompt.
-3. Automate API documentation generation
+3. Improve Automation of API documentation generation
+    * The current implementation relies heavily on annotations in the code.  Refactoring should be done to ensure more of the API documentation is automated without annotations.
 3. Implement API Authentication
     * registration
     * login
