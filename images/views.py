@@ -48,9 +48,6 @@ def index(request):
         200: serializers.ImageSerializer,
         422: OpenApiResponse(description='Bad request response includes errors')
     },
-    parameters=[
-       serializers.ImageUploadSerializer
-    ],
     request={
         'multipart/form-data': {
             'type': 'object',
@@ -159,7 +156,7 @@ def show_with_comments(request, image_id):
         200: serializers.CommentSerializer,
         422: OpenApiResponse(description='Bad request response includes errors')
     },
-    request=serializers.CommentCreate,
+    request=serializers.CommentCreateSerializer,
 )
 @api_view(['POST'])
 def comments(request, image_id):

@@ -172,7 +172,7 @@ LOGGING = {
         },
     },
     "root": {
-        "handlers": ["console", "file"],
+        "handlers": ["file"],
         "level": "DEBUG",
     },
 }

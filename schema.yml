@@ -8,13 +8,6 @@ paths:
     post:
       operationId: analyze_image_create
       description: Ingest a new image.  Stores an image model and analyze the image
-      parameters:
-      - in: query
-        name: file
-        schema:
-          type: string
-          format: uri
-        required: true
       tags:
       - analyze-image
       requestBody:
@@ -137,7 +130,7 @@ paths:
           description: ''
         '422':
           description: Bad request response includes errors
-  /images:
+  /images/:
     get:
       operationId: images_list
       description: Returns a page (10) image records at a time.
