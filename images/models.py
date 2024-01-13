@@ -1,3 +1,7 @@
+"""
+Pogramming task for TJ Ward's application the edLight Senior Fullstack Developer positon
+"""
+
 from django.db import models
 
 class Image(models.Model):

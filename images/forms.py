@@ -1,3 +1,7 @@
+"""
+Pogramming task for TJ Ward's application the edLight Senior Fullstack Developer positon
+"""
+
 from django.forms import ModelForm
 from images.models import Image, Comment
 

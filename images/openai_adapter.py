@@ -1,3 +1,7 @@
+"""
+Pogramming task for TJ Ward's application the edLight Senior Fullstack Developer positon
+"""
+
 import base64
 import requests
 from typing import Union

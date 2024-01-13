@@ -1,3 +1,7 @@
+"""
+Pogramming task for TJ Ward's application the edLight Senior Fullstack Developer positon
+"""
+
 from abc import ABC, abstractmethod
 from typing import Union
 

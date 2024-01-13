@@ -1,3 +1,7 @@
+"""
+Pogramming task for TJ Ward's application the edLight Senior Fullstack Developer positon
+"""
+
 from .forms import ImageForm, CommentForm
 from .models import Image, Comment
 from datetime import datetime

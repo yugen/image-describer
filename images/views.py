@@ -1,3 +1,7 @@
+"""
+Pogramming task for TJ Ward's application the edLight Senior Fullstack Developer positon
+"""
+
 from django.apps import apps
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator, EmptyPage

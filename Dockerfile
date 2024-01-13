@@ -1,4 +1,6 @@
 # syntax=docker/dockerfile:1
+# Pogramming task for TJ Ward's application the edLight Senior Fullstack Developer positon
+
 FROM python:3
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1

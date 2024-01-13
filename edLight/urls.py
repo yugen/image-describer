@@ -1,3 +1,7 @@
+"""
+Pogramming task for TJ Ward's application the edLight Senior Fullstack Developer positon
+"""
+
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic.base import RedirectView
