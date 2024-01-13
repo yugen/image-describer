@@ -204,3 +204,17 @@ class AddCommentEndpointTest(TestCase):
         rsp = self.client.post('/images/1/comments')
         self.assertEqual(rsp.status_code, 422)
         self.assertIn('content', rsp.json()['errors'])
+
+    def test_if_image_is_found_and_data__valid_it_creates_and_responds_with_new_comment(self):
+        # Test the restful endpoint
+        rsp = self.client.post('/images/1/comments', {"content": 'This is content'})
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.json()['content'], 'This is content')
+        self.assertIsNotNone(rsp.json()['id'])
+
+        # Test the mandated endpoint
+        rsp = self.client.post('/image/1/comments', {"content": 'This is content'})
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.json()['content'], 'This is content')
+        self.assertIsNotNone(rsp.json()['id'])
+        
